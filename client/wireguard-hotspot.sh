@@ -2,6 +2,16 @@
   export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
   sleep 3
 
+  # ── Detect Homebrew prefix (Apple Silicon vs Intel) ──
+  # Apple Silicon: /opt/homebrew | Intel: /usr/local
+  if [ "$(uname -m)" = "arm64" ]; then
+      BREW_PREFIX="/opt/homebrew"
+  else
+      BREW_PREFIX="/usr/local"
+  fi
+  WG_BIN="$BREW_PREFIX/bin/wg"
+  WG_QUICK_BIN="$BREW_PREFIX/bin/wg-quick"
+
   # ── Lock to prevent duplicate runs ──
   LOCKFILE="/tmp/wireguard-hotspot.lock"
   if [ -f "$LOCKFILE" ]; then
@@ -21,7 +31,7 @@
 
   # ── Save session stats before tunnel goes down ──
   save_session_stats() {
-      DUMP=$(/opt/homebrew/bin/wg show all dump 2>/dev/null | awk 'NR==2 {print $7, $8}')
+      DUMP=$($WG_BIN show all dump 2>/dev/null | awk 'NR==2 {print $7, $8}')
       if [ -n "$DUMP" ]; then
           RX=$(echo "$DUMP" | cut -d' ' -f1)
           TX=$(echo "$DUMP" | cut -d' ' -f2)
@@ -37,7 +47,7 @@
   if [ "$current_gateway" = "$IPHONE_GATEWAY" ]; then
       if [ ! -f "$WG_STATE_FILE" ]; then
           echo "Hotspot detected - bringing wg0 up"
-          /opt/homebrew/bin/wg-quick up wg0
+          $WG_QUICK_BIN up wg0
       else
           echo "Hotspot detected - wg0 already up, skipping"
       fi
@@ -46,7 +56,7 @@
           echo "Hotspot disconnected - saving session stats"
           save_session_stats
           echo "Bringing wg0 down"
-          /opt/homebrew/bin/wg-quick down wg0
+          $WG_QUICK_BIN down wg0
       else
           echo "Not on hotspot - wg0 already down, skipping"
       fi

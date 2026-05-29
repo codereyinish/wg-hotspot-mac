@@ -1,6 +1,15 @@
 #!/bin/bash
   export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:$PATH"
 
+  # ── Detect Homebrew prefix (Apple Silicon vs Intel) ──
+  # Apple Silicon: /opt/homebrew | Intel: /usr/local
+  if [ "$(uname -m)" = "arm64" ]; then
+      BREW_PREFIX="/opt/homebrew"
+  else
+      BREW_PREFIX="/usr/local"
+  fi
+  WG_BIN="$BREW_PREFIX/bin/wg"
+
   WG_USAGE_LOG="/var/log/wg-usage.log"
 
   # ── ANSI color codes ──
@@ -27,7 +36,7 @@
 
   # ── Get current live session ──
   get_live() {
-      DUMP=$(sudo /opt/homebrew/bin/wg show all dump 2>/dev/null | awk 'NR==2 {print $7, $8}')
+      DUMP=$(sudo $WG_BIN show all dump 2>/dev/null | awk 'NR==2 {print $7, $8}')
       CRX=0
       CTX=0
       TUNNEL_UP=0
