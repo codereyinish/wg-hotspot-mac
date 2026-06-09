@@ -211,8 +211,26 @@ def accept_iphone_slots():
     while True:
         conn, addr = srv.accept()
         with slots_lock:
+            # Pool looks full? Some entries may be CORPSES — slots the iPhone
+            # already closed (we only learn by peeking). Evict the dead ones so
+            # healthy reconnects aren't rejected behind dead slots. An idle LIVE
+            # slot has no data waiting (peek would-block); a DEAD one returns EOF.
             if len(available_slots) >= 20:
-                log(f"Pool full, rejecting slot from {addr}")
+                alive = []
+                for s in available_slots:
+                    try:
+                        if s.recv(1, socket.MSG_PEEK | socket.MSG_DONTWAIT) == b'':
+                            s.close()             # EOF → dead, evict
+                        else:
+                            alive.append(s)       # unexpected data → keep
+                    except BlockingIOError:
+                        alive.append(s)           # no data waiting → alive & idle
+                    except OSError:
+                        try: s.close()
+                        except: pass              # errored → dead, evict
+                available_slots[:] = alive
+            if len(available_slots) >= 20:
+                log(f"Pool full, rejecting slot from {addr}")   # genuinely full of LIVE slots
                 conn.close()
                 continue
             log(f"iPhone slot connected from {addr}")
@@ -226,19 +244,17 @@ def grab_slot():
         time.sleep(0.05)
 
 def send_connect(host, port):
-    """Grab a live slot and send CONNECT command. Returns slot or None."""
+    """Grab a live slot and send CONNECT command. Returns the slot."""
     while True:
         slot = grab_slot()
         try:
             slot.sendall(f"CONNECT {host}:{port}\n".encode())
             return slot
-        except BrokenPipeError:
-            log("Dead slot — clearing pool, waiting for iPhone reconnect...")
-            with slots_lock:
-                for s in available_slots:
-                    try: s.close()
-                    except: pass
-                available_slots.clear()
+        except OSError:
+            # Just THIS slot is dead — drop only it and grab the next one.
+            # (Previously we cleared the WHOLE pool here, which made the iPhone
+            #  flood-reconnect all 20 slots → socket churn → FD leak →
+            #  "Too many open files" wedged accept(). Drop one, keep the other 19.)
             try: slot.close()
             except: pass
 
@@ -425,6 +441,19 @@ if __name__ == "__main__":
         sys.exit(0)
     except OSError:
         pass   # nothing listening → we're the only one
+
+    # Raise the open-file limit. Each slot/client socket is one file descriptor,
+    # and macOS defaults to a low soft limit (~256). A brief connection burst
+    # could otherwise hit it → "Too many open files" → accept() fails → no new
+    # slots. This is headroom only; it costs ~0 memory unless sockets are opened.
+    try:
+        import resource
+        _soft, _hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        _want = min(4096, _hard)
+        resource.setrlimit(resource.RLIMIT_NOFILE, (_want, _hard))
+        log(f"FD limit raised: {_soft} -> {_want} (hard {_hard})")
+    except Exception as _e:
+        log(f"could not raise FD limit: {_e}")
 
     threading.Thread(target=accept_iphone_slots, daemon=True).start()
     threading.Thread(target=accept_socks, daemon=True).start()
