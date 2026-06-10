@@ -3,12 +3,10 @@ PrivateKey = YOUR_CLIENT_PRIVATE_KEY_HERE
 Address = 10.0.0.2/32
 DNS = 1.1.1.1
 
-# Bypass AT&T hotspot detection — sets TTL to 65
-# iPhone decrements it to 64, AT&T sees it as phone traffic (not hotspot)
-# IPv6 disabled on Wi-Fi when tunnel is up — forces all traffic to IPv4
-# through the encrypted tunnel, preventing raw IPv6 leaking through en0
-PostUp = /usr/sbin/sysctl -w net.inet.ip.ttl=65; /usr/sbin/networksetup -setv6off Wi-Fi
-PostDown = /usr/sbin/sysctl -w net.inet.ip.ttl=64; /usr/sbin/networksetup -setv6automatic Wi-Fi
+# Disable IPv6 on Wi-Fi while the tunnel is up, so nothing leaks outside the
+# encrypted tunnel — all traffic goes IPv4 through WireGuard. Standard VPN hygiene.
+PostUp = /usr/sbin/networksetup -setv6off Wi-Fi
+PostDown = /usr/sbin/networksetup -setv6automatic Wi-Fi
 
 [Peer]
 PublicKey = YOUR_SERVER_PUBLIC_KEY_HERE

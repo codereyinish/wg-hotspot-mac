@@ -1,10 +1,10 @@
 #!/bin/bash
 # =============================================================================
-# install.sh — WireGuard Hotspot Mac Installer
+# install.sh — WireGuard VPN Installer
 # =============================================================================
 # What this script does:
 #   Installs everything needed to auto-connect your Mac to a self-hosted
-#   WireGuard VPN whenever you tether from an iPhone hotspot.
+#   WireGuard VPN on a chosen network.
 #
 # What it installs:
 #   - Homebrew (if missing)
@@ -98,10 +98,10 @@ ask() {
 # =============================================================================
 clear
 echo ""
-echo "${BLD}  WireGuard Hotspot Mac — Installer${RST}"
+echo "${BLD}  WireGuard VPN — Installer${RST}"
 echo "  ────────────────────────────────────────"
 echo "  Automatically connect your Mac to your"
-echo "  private VPN when tethering from iPhone."
+echo "  own private VPN on a chosen network."
 echo ""
 echo "  This installer will ask you 3 things:"
 echo "    1. Your WireGuard server IP"
