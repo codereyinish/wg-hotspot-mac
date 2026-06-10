@@ -26,6 +26,21 @@ The GUI app shows its **own** stats, plus the toggle and **On-Demand** auto-conn
 — all native. So the entire reason we needed the CLI (custom stats) disappears for
 someone who just wants a working VPN.
 
+## What the CLI path unlocks (and the app can't)
+The App Store app is sandboxed and shows only *its own* client-side stats. The CLI
+path is scriptable, so it's the foundation for a **custom menu-bar widget** the app
+could never be — including **server-side** metrics pulled from the VPS over SSH:
+
+```
+- VPS load / CPU
+- active connections (threads)
+- round-trip latency to the server
+```
+
+That's the real reason to keep the CLI on the developer path: end-to-end
+monitoring *you* control — your client stats *and* your server's health in one
+place, not just an on/off toggle. (Planned — see future work.)
+
 ## Decision: ship both, tiered
 - **Easy path (default):** the App Store app — install, import config, toggle from
   the menu bar, On-Demand for auto-connect. Zero terminal. For most people.
