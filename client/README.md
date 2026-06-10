@@ -2,9 +2,10 @@
 
 Tunnel your Mac through your own cloud server over an encrypted WireGuard
 connection, so traffic is encrypted to a server *you* control — instead of
-trusting a third-party VPN provider. A menu-bar widget shows live data usage.
+trusting a third-party VPN provider.
 
-📐 **Why WireGuard, and not a simpler TLS relay?** → [ARCHITECTURE.md](ARCHITECTURE.md)
+📐 **Architecture & decisions** (why WireGuard, why the Mac, CLI vs app):
+[ARCHITECTURE.md](ARCHITECTURE.md)
 
 ## Why self-hosted
 Public / free WiFi is slow and untrusted: anything between you and a site can
@@ -18,33 +19,30 @@ your Mac → [WireGuard encrypted tunnel] → your VPS → internet
 ```
 - **WireGuard** — modern, fast VPN protocol (ChaCha20, tiny codebase)
 - **Your VPS** (e.g. Oracle Cloud Free Tier) — the always-on exit node you control
-- **launchd auto-connect** — watches for network changes and brings the tunnel up
-  automatically on a configured network (edit the gateway check in the script)
-- **SwiftBar menu-bar widget** — live data usage per session / day / all-time
 
-## What the menu bar looks like
-```
-WG ●  ↓8.33 MB  ↑47.60 MB
-─────────────────────────────
-🟢  Live   ↓8.33 MB   ↑47.60 MB
-📅  Today      ↓20 MB   ↑77 MB
-🌐  All time   ↓201 MB  ↑119 MB
-```
+## Two ways to run it
 
-## Setup
-Server first, then Mac. Full step-by-step (no installer required):
-[../DEVELOPER.md](../DEVELOPER.md).
+### Easy path (recommended) — the WireGuard app
+1. Install **WireGuard** from the **Mac App Store** (open source — same project as the CLI).
+2. **Add Tunnel → Import from file** → choose your `wg0.conf`.
+3. Enable **On-Demand** so it auto-connects on a network and survives reboot.
+4. Toggle on/off from the **menu-bar** icon anytime. Status + ↑/↓ data + last
+   handshake show in the app.
 
-Quick path:
+No terminal — the app handles the toggle, auto-connect, and stats natively.
+
+### Advanced path — the CLI (scriptable)
+For tinkering / custom behaviour: `wg-quick` + a launchd auto-connect script + a
+terminal stats script (`wg-stats`). Full step-by-step: [../DEVELOPER.md](../DEVELOPER.md).
 ```bash
-# 1. Server (Ubuntu VPS): install WireGuard + open UDP 51820
+# Server (Ubuntu VPS): install WireGuard + open UDP 51820
 curl -fsSL https://raw.githubusercontent.com/codereyinish/wg-hotspot-mac/main/server/setup.sh | sudo bash
-# 2. Mac: clone + run the installer (asks for server IP + public key)
+# Mac: clone + run the installer
 ./install.sh
 ```
 
 ## Layout
-- `client/` — Mac client config, auto-connect script, launchd job, stats widget
+- `client/` — config, the CLI scripts (advanced path), and `decisions/` (architecture)
 - `server/` — VPS / WireGuard server setup
 
 ## Note
